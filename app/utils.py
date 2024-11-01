@@ -1,17 +1,17 @@
-from subprocess import run
-
-from git import Repo
-from git.exc import NoSuchPathError
+from subprocess import run, CompletedProcess
 
 
-
-def create_repo(path: str) -> Repo | None:
+def create_repo(path: str) -> None:
     """Creates repo, if it does not exist."""
-    # todo: replace git Repo with subprocess
-    try:
-        return Repo(path)
-    except NoSuchPathError:
-        return Repo.init(path)
+    output = run(["git", "-C", f".", "rev-parse", "2>/dev/null;", "echo $?"],
+        capture_output=True,
+        cwd=path)
+    
+    if output:
+        # todo: check for errors:
+        run(["git", "init"],
+            capture_output=True,
+            cwd=path)
 
 
 def show_file(repo_path: str, note_path: str, branch_name: str):
@@ -52,8 +52,7 @@ def commit(repo_path: str, branch_name: str, file: str):
     return _check_output(output)
 
 
-def _check_output(output):
-    print(type(output))
+def _check_output(output: CompletedProcess):
     if output.stderr:
         # todo: log this.
         # todo: raise exception here
