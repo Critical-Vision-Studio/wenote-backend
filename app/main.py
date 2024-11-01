@@ -5,15 +5,14 @@ from blacksheep import Application, get, post, put, delete
 
 sys.path.append(os.path.abspath('../'))
 
-from wenote.config import settings
-from utils import show_file, commit, checkout_branch, add_file
-from exceptions import ErrorStatus
+from config import settings
+from app.utils import show_file, commit, checkout_branch, add_file
+from app.exceptions import ErrorStatus
 
 app = Application()
 
 
 # create branch, make changes, delete branch
-
 @get('/apiv1/get-note')
 def get_note(note_path: str, branch_name: str):
     note = show_file(settings.REPO_PATH, note_path, branch_name)
