@@ -13,4 +13,4 @@ COPY ./app /wenote/app
 
 RUN mkdir -p logs
 
-CMD ["uvicorn", "app.main:app", "--port", "80"]
+CMD ["uvicorn", "app.main:app", "--port", "80", "--host", "0.0.0.0"]
