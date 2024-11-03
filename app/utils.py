@@ -1,18 +1,26 @@
+from os import linesep
 from subprocess import run, CompletedProcess
 
+from exceptions import LogicalError
 
-def create_repo(path: str) -> None:
+# todo: create class that will handle user (and branch) switching automatically
+
+def create_repo(repo_path: str) -> None:
     """Creates repo, if it does not exist."""
-    output = run(["git", "-C", f".", "rev-parse", "2>/dev/null;", "echo $?"],
+    output = run(["git", "-C", ".", "rev-parse", "2>/dev/null;", "echo $?"],
         capture_output=True,
-        cwd=path)
+        cwd=repo_path)
     
     if output:
         # todo: check for errors:
         run(["git", "init"],
             capture_output=True,
-            cwd=path)
+            cwd=repo_path)
 
+
+def switch_user():
+    ...
+        
 
 def show_file(repo_path: str, note_path: str, branch_name: str):
     """Shows file from path and specified branch"""
@@ -31,9 +39,26 @@ def checkout_branch(repo_path: str, branch_name: str):
     return _check_output(output)
 
 
-def write_(repo_path: str, note_name: str, note_value: str):
-    with open(repo_path+note_name, 'w+') as fh:
-        fh.write(note_value)
+def list_branches(repo_path: str, name: str):
+    output = run(["git", "branch", "-l", f"{name}"],
+                     capture_output=True,
+                     cwd=repo_path)
+
+    return _check_output(output)
+
+
+def branch_exists(repo_path:str, name: str):
+    branch_count = list_branches(repo_path, name).count(linesep)
+    if not branch_count:
+        return False
+    if branch_count > 1:
+        raise LogicalError(f"{name}, {branch_count}, in branch_exists func")
+    return True
+
+
+def write_note(repo_path: str, note_path: str, note_value: str) -> None:
+    with open(repo_path+note_path, 'w+') as fh:
+        fh.write(note_val no)
 
 
 def add_file(repo_path: str, file: str):
@@ -44,19 +69,28 @@ def add_file(repo_path: str, file: str):
     return _check_output(output)
 
 
-def commit(repo_path: str, branch_name: str, file: str):
-    output = run(["git", "commit", f"{branch_name}:{file}"],
+def commit(repo_path: str, branch_name: str, file: str, msg: str):
+    aoihfjadslfbl
+    output = run(["git", "commit", f"{branch_name}:{file}", "-m", msg],
                  capture_output=True,
                  cwd=repo_path)
 
     return _check_output(output)
 
+                                                        # RADIK LOX
+def merge(repo_path: str, main_branch: str):
+    output = run(["git", "merge", main_branch],
+                     capture_output=True,
+                     cwd=repo_path)
+    return _check_output(output)
+
+
+def delete_branch(repo_path: str, branch_name: str):
+    ...
+
 
 def _check_output(output: CompletedProcess):
     if output.stderr:
-        # todo: log this.
-        # todo: raise exception here
-        print(output.stderr)
-        return False 
+        raise LogicalError(output.stderr)
     return output.stdout.decode()
 
