@@ -17,6 +17,7 @@ logger.setLevel(logging.getLevelName(logging.DEBUG))
 class Settings(BaseSettings):
     DEBUG: bool
     REPO_PATH: str
+    MAIN_BRANCH: str
 
 
 settings = Settings(_env_file=".env")

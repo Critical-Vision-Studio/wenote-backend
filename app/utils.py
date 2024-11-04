@@ -1,7 +1,7 @@
 from os import linesep
 from subprocess import run, CompletedProcess
 
-from exceptions import LogicalError
+from app.exceptions import LogicalError
 
 # todo: create class that will handle user (and branch) switching automatically
 
@@ -31,13 +31,19 @@ def show_file(repo_path: str, note_path: str, branch_name: str):
     return _check_output(output)
 
 
-def checkout_branch(repo_path: str, branch_name: str):
-    output = run(["git", "checkout -b", f"{branch_name}"],
+def create_branch(repo_path: str, branch_name: str):
+    output = run(["git", "checkout", "-b", f"{branch_name}"],
                  capture_output=True,
                  cwd=repo_path)
 
     return _check_output(output)
 
+def checkout_branch(repo_path: str, branch_name: str):
+    output = run(["git", "checkout", f"{branch_name}"],
+                 capture_output=True,
+                 cwd=repo_path)
+
+    return _check_output(output)
 
 def list_branches(repo_path: str, name: str):
     output = run(["git", "branch", "-l", f"{name}"],
@@ -58,7 +64,7 @@ def branch_exists(repo_path:str, name: str):
 
 def write_note(repo_path: str, note_path: str, note_value: str) -> None:
     with open(repo_path+note_path, 'w+') as fh:
-        fh.write(note_val no)
+        fh.write(note_value)
 
 
 def add_file(repo_path: str, file: str):
