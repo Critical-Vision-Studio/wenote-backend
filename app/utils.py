@@ -76,7 +76,6 @@ def add_file(repo_path: str, file: str):
 
 
 def commit(repo_path: str, branch_name: str, file: str, msg: str):
-    aoihfjadslfbl
     output = run(["git", "commit", f"{branch_name}:{file}", "-m", msg],
                  capture_output=True,
                  cwd=repo_path)
@@ -88,15 +87,21 @@ def merge(repo_path: str, main_branch: str):
     output = run(["git", "merge", main_branch],
                      capture_output=True,
                      cwd=repo_path)
-    return _check_output(output)
+    return "CONFLICT" in _check_output(output)
 
 
 def delete_branch(repo_path: str, branch_name: str):
-    ...
+    # todo: check status if delete failed
+    output = run(["git", "branch", "-d", branch_name],
+                         capture_output=True,
+                         cwd=repo_path)
+    return _check_output(output)
+
 
 
 def _check_output(output: CompletedProcess):
     if output.stderr:
-        raise LogicalError(output.stderr)
+        print(output.stderr)
+        #raise LogicalError(output.stderr)
     return output.stdout.decode()
 

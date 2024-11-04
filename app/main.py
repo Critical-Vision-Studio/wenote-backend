@@ -7,7 +7,7 @@ from blacksheep.server.responses import ok, created, file, json
 sys.path.append(os.path.abspath('../'))
 
 from config import settings
-from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch
+from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch
 from app.exceptions import LogicalError
 from app.middlewares import exception_handler_middleware
 
@@ -79,11 +79,12 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
             raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}")
         delete_branch(settings.REPO_PATH, branch_name)
     else:
-        commit(settings.REPO_PATH, branch_name, note_path, "conflict ")
+        #commit(settings.REPO_PATH, branch_name, note_path, "conflict")
         # todo: return Response
-        return json({"status": "conflict", "note": show_file(settings.REPO_PATH, note_path, branch_name)})
+        with open(settings.REPO_PATH+note_path, "r") as f:
+            return json({"status": "conflict", "note": f.read()})
 
-    return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, branch_name)})
+    return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)})
 
 
 
