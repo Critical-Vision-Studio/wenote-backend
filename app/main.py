@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 import sys
 import os
 
+from blacksheep import FromJSON
 from blacksheep import Application, get, post, put, delete
 from blacksheep.server.responses import ok, created, file, json
 
@@ -48,13 +50,11 @@ def create_note(note_path: str, note_value: str):
 
     return created()
 
-from blacksheep import FromJSON
-from dataclasses import dataclass
-
 @dataclass
 class UpdateNoteInput:
     note_path: str
     note_value: str
+
 
 @put('/apiv1/update-note')
 def update_note(input_: FromJSON[UpdateNoteInput]):
@@ -66,10 +66,9 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
         raise LogicalError(f"branch name already exists - {branch_name}")
 
     create_branch(settings.REPO_PATH, branch_name)
-    # todo: file must exist
     write_note(settings.REPO_PATH, note_path, note_value)
     add_file(settings.REPO_PATH, note_path)
-    commit(settings.REPO_PATH, branch_name, note_path, f"update {note_path}")
+    commit(settings.REPO_PATH, note_path, f"update {note_path}")
 
     conflict = merge(settings.REPO_PATH, settings.MAIN_BRANCH)
     if not conflict:
@@ -80,10 +79,10 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
         delete_branch(settings.REPO_PATH, branch_name)
     else:
         #commit(settings.REPO_PATH, branch_name, note_path, "conflict")
-        # todo: return Response
         with open(settings.REPO_PATH+note_path, "r") as f:
             return json({"status": "conflict", "note": f.read()})
 
+    print('in the end')
     return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)})
 
 

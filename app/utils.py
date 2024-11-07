@@ -75,14 +75,14 @@ def add_file(repo_path: str, file: str):
     return _check_output(output)
 
 
-def commit(repo_path: str, branch_name: str, file: str, msg: str):
-    output = run(["git", "commit", f"{branch_name}:{file}", "-m", msg],
+def commit(repo_path: str, file_path: str, msg: str):
+    output = run(["git", "commit", f"{file_path}", "-m", msg],
                  capture_output=True,
                  cwd=repo_path)
 
     return _check_output(output)
 
-                                                        # RADIK LOX
+
 def merge(repo_path: str, main_branch: str):
     output = run(["git", "merge", main_branch],
                      capture_output=True,

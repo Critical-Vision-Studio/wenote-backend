@@ -9,5 +9,8 @@ async def exception_handler_middleware(request, handler):
         # todo: logging.
         print(e)
         return Response(500)
+    except (FileNotFoundError, IOError) as e:
+        print(e)
+        return Response(500)
     return response
 
