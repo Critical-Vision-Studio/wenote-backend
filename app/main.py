@@ -17,6 +17,13 @@ from app.middlewares import exception_handler_middleware
 app = Application()
 app.middlewares.append(exception_handler_middleware)
 
+app.use_cors(
+    allow_methods="*",
+    allow_origins="*",
+    allow_headers="* Authorization",
+    max_age=300,
+)
+
 
 # create branch, make changes, delete branch
 @get('/apiv1/get-note')
