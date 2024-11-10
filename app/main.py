@@ -9,7 +9,7 @@ from blacksheep.server.responses import ok, created, file, json
 sys.path.append(os.path.abspath('../'))
 
 from config import settings
-from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch
+from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch, list_files, get_current_branch
 from app.exceptions import LogicalError
 from app.middlewares import exception_handler_middleware
 
@@ -31,6 +31,20 @@ def get_note(note_path: str, branch_name: str):
     note = show_file(settings.REPO_PATH, note_path, branch_name)
 
     return json({"note": note})
+
+
+@get('/apiv1/get-notes/')
+def get_notes(branch_name: str):
+    if not branch_exists(settings.REPO_PATH, branch_name):
+        raise LogicalError(f"branch does not exist - {branch_name}")
+
+    if branch_name != get_current_branch(settings.REPO_PATH):
+        checkout_branch(settings.REPO_PATH, branch_name)
+
+    files = list_files(settings.REPO_PATH)
+    
+    return json({"notes": files})
+
 
 
 @post('/apiv1/create-note')

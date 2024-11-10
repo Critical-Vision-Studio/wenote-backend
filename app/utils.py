@@ -98,6 +98,22 @@ def delete_branch(repo_path: str, branch_name: str):
     return _check_output(output)
 
 
+def list_files(repo_path: str) -> list:
+    output = run(["git", "ls-files"],
+                  capture_output=True,
+                  cwd=repo_path)
+
+    return _check_output(output).splitlines() 
+
+
+def get_current_branch(repo_path: str):
+    output = run(["git", "branch", "--show-current"],
+                  capture_output=True,
+                  cwd=repo_path)
+
+    return _check_output(output).strip("\n")
+
+
 
 def _check_output(output: CompletedProcess):
     if output.stderr:
