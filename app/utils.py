@@ -98,8 +98,8 @@ def delete_branch(repo_path: str, branch_name: str):
     return _check_output(output)
 
 
-def list_files(repo_path: str) -> list:
-    output = run(["git", "ls-files"],
+def list_files(repo_path: str, branch_name: str) -> list:
+    output = run(["git", "ls-tree", "-r", f"{branch_name}", "--name-only"],
                   capture_output=True,
                   cwd=repo_path)
 

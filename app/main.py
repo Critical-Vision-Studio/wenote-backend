@@ -33,7 +33,7 @@ def get_note(note_path: str, branch_name: str):
     return json({"note": note})
 
 
-@get('/apiv1/get-notes/')
+@get('/apiv1/get-note-names/')
 def get_notes(branch_name: str):
     if not branch_exists(settings.REPO_PATH, branch_name):
         raise LogicalError(f"branch does not exist - {branch_name}")
@@ -41,7 +41,7 @@ def get_notes(branch_name: str):
     if branch_name != get_current_branch(settings.REPO_PATH):
         checkout_branch(settings.REPO_PATH, branch_name)
 
-    files = list_files(settings.REPO_PATH)
+    files = list_files(settings.REPO_PATH, branch_name)
     
     return json({"notes": files})
 
