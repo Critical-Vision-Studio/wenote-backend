@@ -1,4 +1,5 @@
-from os import linesep
+import os
+
 from subprocess import run, CompletedProcess
 
 from app.exceptions import LogicalError
@@ -54,7 +55,7 @@ def list_branches(repo_path: str, name: str):
 
 
 def branch_exists(repo_path:str, name: str):
-    branch_count = list_branches(repo_path, name).count(linesep)
+    branch_count = list_branches(repo_path, name).count(os.linesep)
     if not branch_count:
         return False
     if branch_count > 1:
@@ -63,7 +64,7 @@ def branch_exists(repo_path:str, name: str):
 
 
 def write_note(repo_path: str, note_path: str, note_value: str) -> None:
-    with open(repo_path+note_path, 'w+') as fh:
+    with open(os.path.join(repo_path, note_path), 'w+') as fh:
         fh.write(note_value)
 
 

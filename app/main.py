@@ -99,14 +99,13 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
             raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}")
         delete_branch(settings.REPO_PATH, branch_name)
     else:
-        #commit(settings.REPO_PATH, branch_name, note_path, "conflict")
-        with open(settings.REPO_PATH+note_path, "r") as f:
+        #todo: commit(settings.REPO_PATH, branch_name, note_path, "conflict")
+        with open(os.path.join(settings.REPO_PATH, note_path), "r") as f:
             return json({"status": "conflict", "note": f.read()})
+
 
     print('in the end')
     return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)})
-
-
 
 
 @delete('/apiv1/delete-note')
