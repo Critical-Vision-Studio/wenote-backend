@@ -28,7 +28,6 @@ def file_exists(repo_path: str, note_path: str, branch_name: str):
                  capture_output=True,
                  cwd=repo_path)
 
-    print("in file exists: ", _check_output(output))
     return not _check_output(output)
 
 
@@ -100,15 +99,15 @@ def merge(repo_path: str, main_branch: str):
     return "CONFLICT" in _check_output(output)
 
 
-def delete_branch(repo_path: str, branch_name: str):
+def delete_branch(repo_path: str, branch_name: str, force: bool = False):
     # todo: check status if delete failed
-    output = run(["git", "branch", "-d", branch_name],
+    output = run(["git", "branch", "-D" if force else "-d", branch_name],
                          capture_output=True,
                          cwd=repo_path)
     return _check_output(output)
 
 
-def delete_note(repo_path: str, note_path: str):
+def delete_file(repo_path: str, note_path: str):
     output = run(["git", "rm", note_path],
                          capture_output=True,
                          cwd=repo_path)
@@ -132,10 +131,11 @@ def get_current_branch(repo_path: str):
     return _check_output(output).strip("\n")
 
 
-
 def _check_output(output: CompletedProcess):
-    if output.stderr:
-        print("in check_output:", output.stderr)
-        raise LogicalError(output.stderr)
+    check_for_error = lambda stream: b"error" in stream or b"fatal" in stream 
+    if check_for_error(output.stderr) or check_for_error(output.stderr):
+       print("ERR: in check_output:", output.stderr)
+       raise LogicalError(output.stderr)
+
     return output.stdout.decode()
 
