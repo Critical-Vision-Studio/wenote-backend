@@ -11,17 +11,26 @@ def create_repo(repo_path: str) -> None:
     output = run(["git", "-C", ".", "rev-parse", "2>/dev/null;", "echo $?"],
         capture_output=True,
         cwd=repo_path)
-    
-    if output:
-        # todo: check for errors:
-        run(["git", "init"],
-            capture_output=True,
-            cwd=repo_path)
+    _check_output(output)
+
+    output = run(["git", "init"],
+        capture_output=True,
+        cwd=repo_path)
+    _check_output(output)
 
 
 def switch_user():
     ...
-        
+
+
+def file_exists(repo_path: str, note_path: str, branch_name: str):
+    output = run(["git", "cat-file", "-e", f"{branch_name}:{note_path}"],
+                 capture_output=True,
+                 cwd=repo_path)
+
+    print("in file exists: ", _check_output(output))
+    return not _check_output(output)
+
 
 def show_file(repo_path: str, note_path: str, branch_name: str):
     """Shows file from path and specified branch"""
@@ -118,7 +127,7 @@ def get_current_branch(repo_path: str):
 
 def _check_output(output: CompletedProcess):
     if output.stderr:
-        print(output.stderr)
-        #raise LogicalError(output.stderr)
+        print("in check_output:", output.stderr)
+        raise LogicalError(output.stderr)
     return output.stdout.decode()
 
