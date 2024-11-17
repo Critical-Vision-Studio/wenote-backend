@@ -108,6 +108,14 @@ def delete_branch(repo_path: str, branch_name: str):
     return _check_output(output)
 
 
+def delete_note(repo_path: str, note_path: str):
+    output = run(["git", "rm", note_path],
+                         capture_output=True,
+                         cwd=repo_path)
+    return _check_output(output)
+
+
+
 def list_files(repo_path: str, branch_name: str) -> list:
     output = run(["git", "ls-tree", "-r", f"{branch_name}", "--name-only"],
                   capture_output=True,
