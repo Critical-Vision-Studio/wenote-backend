@@ -34,7 +34,7 @@ def mask_conflicts(repo_path: str, file_path: str):
 
     for index, line in enumerate(file_value):
         if search_for(line):
-            file_value[index] = wenote_marker + " " + line
+            file_value[index] = wenote_conflict_marker + " " + line
 
     with open(repo_path+file_path, "w") as f:
         f.writelines(file_value)
