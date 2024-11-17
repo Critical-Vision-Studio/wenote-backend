@@ -9,7 +9,7 @@ from blacksheep.server.responses import created, json
 sys.path.append(os.path.abspath('../'))
 
 from config import settings
-from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch, list_files, get_current_branch, file_exists
+from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch, list_files, get_current_branch, file_exists, delete_file
 from app.exceptions import LogicalError
 from app.middlewares import exception_handler_middleware
 from app.cps import mask_conflicts
@@ -85,6 +85,13 @@ class UpdateNoteInput:
     note_value: str
 
 
+@dataclass
+class DeleteNoteInput:
+    note_path: str
+    branch_name: str
+
+
+
 @put('/apiv1/update-note')
 def update_note(input_: FromJSON[UpdateNoteInput]):
     note_path: str = input_.value.note_path
@@ -118,6 +125,33 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
 
 
 @delete('/apiv1/delete-note')
-def delete_note():
-    ...
+def delete_note(input_: FromJSON[DeleteNoteInput]):
+    note_path: str = input_.value.note_path
+    branch_name: str = input_.value.branch_name
+
+    file_exists(settings.REPO_PATH, note_path, branch_name)
+
+    branch_name = f"user-delete-{note_path}"
+    create_branch(settings.REPO_PATH, branch_name)
+
+    delete_file(settings.REPO_PATH, note_path)
+    commit(settings.REPO_PATH, note_path, f"deleted {note_path}")
+
+    conflict = merge(settings.REPO_PATH, settings.MAIN_BRANCH)
+    if conflict:
+        mask_conflicts(settings.REPO_PATH, note_path)
+        commit(settings.REPO_PATH, note_path, f"conflict with deletion of {note_path}")
+
+        note_value = show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)
+        return json({"status": "conflict", "note": note_value})
+
+
+    checkout_branch(settings.REPO_PATH, settings.MAIN_BRANCH)
+    conflict_on_main = merge(settings.REPO_PATH, branch_name)
+    if conflict_on_main:
+        raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}.")
+
+    delete_branch(settings.REPO_PATH, branch_name)
+
+    return json({"status": "ok", "message": f"Note '{note_path}' deleted."})
 
