@@ -45,7 +45,7 @@ def get_notes(branch_name: str):
 
     files = list_files(settings.REPO_PATH, branch_name)
     
-    return json({"notes": files})
+    return json({"branch_name": branch_name, "notes": files})
 
 
 
