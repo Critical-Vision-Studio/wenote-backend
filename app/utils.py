@@ -18,12 +18,13 @@ def create_repo(repo_path: str) -> None:
         cwd=repo_path)
     _check_output(output)
 
-def get_head_commit_id(repo_path: str);
-    output = run(["git", "rev-parse", "HEAD"],
+
+def get_commit_id(repo_path: str, from_: str):
+    output = run(["git", "rev-parse", from_],
                  capture_output=True,
                  cwd=repo_path)
 
-    return not _check_output(output)
+    return _check_output(output)
 
 
 

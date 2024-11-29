@@ -9,7 +9,7 @@ from blacksheep.server.responses import created, json
 sys.path.append(os.path.abspath('../'))
 
 from config import settings
-from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch, list_files, get_current_branch, file_exists, delete_file, get_head_commit_id
+from app.utils import show_file, commit, checkout_branch, add_file, branch_exists, write_note, merge, create_branch, delete_branch, list_files, get_current_branch, file_exists, delete_file, get_commit_id
 from app.exceptions import LogicalError
 from app.middlewares import exception_handler_middleware
 from app.cps import mask_conflicts
@@ -35,7 +35,8 @@ def get_note(note_path: str, branch_name: str):
 
     readonly = False 
 
-    return json({"note": note, "readonly": readonly})
+    return json({"note": note, "readonly": readonly, 
+                 "commit_id": get_commit_id(settings.REPO_PATH, branch_name)})
 
 
 @get('/apiv1/get-note-names/')
@@ -103,7 +104,7 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
     branch_name: str = input_.value.branch_name
     commit_id: str = input_.value.commit_id
 
-    if commit_id == get_head_commit_id(settings.REPO_PATH):
+    if commit_id == get_commit_id(settings.REPO_PATH, "HEAD"):
         return LogicalError(f"REQUEST_STATE_OUTDATED")
 
     if branch_name == "master":
@@ -134,7 +135,7 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
 
         
     return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH),
-                 "branch_name": branch_name, "commit_id": get_head_commit_id(settings.REPO_PATH)})
+                 "branch_name": branch_name, "commit_id": get_commit_id(settings.REPO_PATH, "HEAD")})
 
 
 @delete('/apiv1/delete-note')
