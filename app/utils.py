@@ -18,6 +18,14 @@ def create_repo(repo_path: str) -> None:
         cwd=repo_path)
     _check_output(output)
 
+def get_head_commit_id(repo_path: str);
+    output = run(["git", "rev-parse", "HEAD"],
+                 capture_output=True,
+                 cwd=repo_path)
+
+    return not _check_output(output)
+
+
 
 def switch_user():
     ...
