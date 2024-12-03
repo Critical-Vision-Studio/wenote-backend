@@ -104,15 +104,18 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
     branch_name: str = input_.value.branch_name
     commit_id: str = input_.value.commit_id
 
+    if not branch_exists(settings.REPO_PATH, branch_name):
+        raise LogicalError(f"branch name does not exist - {branch_name}")
+
     if commit_id != get_commit_id(settings.REPO_PATH, branch_name):
         return LogicalError(f"REQUEST_STATE_OUTDATED")
 
     if branch_name == "master":
         branch_name = f"user-{note_path}"
-        create_branch(settings.REPO_PATH, branch_name)
-
         if branch_exists(settings.REPO_PATH, branch_name):
             raise LogicalError(f"branch name already exists - {branch_name}")
+
+        create_branch(settings.REPO_PATH, branch_name)
 
     write_note(settings.REPO_PATH, note_path, note_value)
     add_file(settings.REPO_PATH, note_path)
@@ -122,10 +125,12 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
     if conflict:
         mask_conflicts(settings.REPO_PATH, note_path)
         commit(settings.REPO_PATH, note_path, f"conflict with {note_path}")
-        merge(settings.REPO_PATH, settings.MAIN_BRANCH)
     
-        note_value = show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)
-        return json({"status": "conflict", "note": note_value})
+        note_value = show_file(settings.REPO_PATH, note_path, branch_name)
+        return json({"status": "conflict", 
+                     "note": show_file(settings.REPO_PATH, note_path, branch_name),
+                     "branch_name": branch_name, 
+                     "commit_id": get_commit_id(settings.REPO_PATH, "HEAD")})
 
     checkout_branch(settings.REPO_PATH, settings.MAIN_BRANCH)
     conflict_on_main = merge(settings.REPO_PATH, branch_name)
@@ -134,8 +139,10 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
     delete_branch(settings.REPO_PATH, branch_name)
 
         
-    return json({"status": "ok", "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH),
-                 "branch_name": branch_name, "commit_id": get_commit_id(settings.REPO_PATH, "HEAD")})
+    return json({"status": "ok", 
+                 "note": show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH),
+                 "branch_name": settings.MAIN_BRANCH, 
+                 "commit_id": get_commit_id(settings.REPO_PATH, "HEAD")})
 
 
 @delete('/apiv1/delete-note')
