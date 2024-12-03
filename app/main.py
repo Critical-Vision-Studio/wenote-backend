@@ -88,6 +88,7 @@ class UpdateNoteInput:
     note_path: str
     note_value: str
     branch_name: str
+    commit_id: str
 
 
 @dataclass
@@ -108,7 +109,7 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
         raise LogicalError(f"branch name does not exist - {branch_name}")
 
     if commit_id != get_commit_id(settings.REPO_PATH, branch_name):
-        return LogicalError(f"REQUEST_STATE_OUTDATED")
+        raise LogicalError(f"REQUEST_STATE_OUTDATED")
 
     if branch_name == "master":
         branch_name = f"user-{note_path}"
