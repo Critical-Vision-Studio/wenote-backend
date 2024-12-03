@@ -24,7 +24,7 @@ def get_commit_id(repo_path: str, from_: str):
                  capture_output=True,
                  cwd=repo_path)
 
-    return _check_output(output)
+    return _check_output(output).strip("\n")
 
 
 
