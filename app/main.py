@@ -104,7 +104,7 @@ def update_note(input_: FromJSON[UpdateNoteInput]):
     branch_name: str = input_.value.branch_name
     commit_id: str = input_.value.commit_id
 
-    if commit_id == get_commit_id(settings.REPO_PATH, "HEAD"):
+    if commit_id != get_commit_id(settings.REPO_PATH, branch_name):
         return LogicalError(f"REQUEST_STATE_OUTDATED")
 
     if branch_name == "master":
