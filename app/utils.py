@@ -11,7 +11,9 @@ def create_repo(repo_path: str) -> None:
     output = run(["git", "-C", ".", "rev-parse", "2>/dev/null;", "echo $?"],
         capture_output=True,
         cwd=repo_path)
-    _check_output(output)
+    if output.stdout.decode() == "0":
+        print('repo already exists!!!')
+        return
 
     output = run(["git", "init"],
         capture_output=True,
