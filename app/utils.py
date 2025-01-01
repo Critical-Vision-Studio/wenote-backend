@@ -71,7 +71,7 @@ def checkout_branch(repo_path: str, branch_name: str):
 
     return _check_output(output)
 
-def list_branches(repo_path: str, name: str):
+def list_branches(repo_path: str, name: str = '--all'):
     output = run(["git", "branch", "-l", f"{name}"],
                      capture_output=True,
                      cwd=repo_path)
