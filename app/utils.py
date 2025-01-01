@@ -109,8 +109,8 @@ def commit(repo_path: str, file_path: str, msg: str):
     return _check_output(output)
 
 
-def merge(repo_path: str, main_branch: str):
-    output = run(["git", "merge", main_branch],
+def merge(repo_path: str, branch: str):
+    output = run(["git", "merge", branch],
                      capture_output=True,
                      cwd=repo_path)
     return "CONFLICT" in _check_output(output)
