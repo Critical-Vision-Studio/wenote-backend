@@ -1,5 +1,34 @@
-# RUN SERVER
-`uvicorn app.main:app --port 8484 --host 0.0.0.0`
+# Wenote API
+### Installing 
+`git clone https://github.com/Critical-Vision-Studio/wenote-backend.git`
 
-# run curl
-`curl -v -X PUT -H "Content-Type: application/json" \ -d '{"note_path": "haha.txt", "note_value": "RODION"}' \ "http://0.0.0.0:8484/apiv1/update-note"`
+`cd wenote-backend`
+
+`docker build -t wenote-api`
+
+### Running
+`docker run -p 127.0.0.1:8080:8080 -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api &`
+
+### Testing
+`docker exec -it <container-id> pytest`
+
+you can get container id from
+`docker ps -q -f "ancestor=wenote-api"`
+
+### For Debug
+```
+GET-NOTE:
+curl "http://0.0.0.0:5000/apiv1/get-note?note_path=haha.txt&branch_name=master"
+
+GET-NOTE-NAMES:
+curl "http://0.0.0.0:5000/apiv1/get-note?note_path=haha.txt&branch_name=master"
+
+CREATE-NOTE
+curl -v -X POST -H "Content-Type: application/json" -d '{"note_path": "haha.txt", "note_value": "RODION"}' "http://0.0.0.0:5000/apiv1/create-note"
+
+UPDATE-NOTE:
+curl -v -X PUT -H "Content-Type: application/json" -d '{"commit_id": "ea2b12b1bf9ed84c49fdc91376fe1206dbe68050", "branch_name": "master", "note_path": "haha.txt", "note_value": "RODION"}' "http://0.0.0.0:5000/apiv1/update-note"
+
+DELETE-NOTE
+curl -v -X DELETE -H "Content-Type: application/json" -d '{"note_path": "ee.txt", "branch_name": "master"}' "http://0.0.0.0:5000/apiv1/delete-note"
+```
