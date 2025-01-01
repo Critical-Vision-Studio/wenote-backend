@@ -7,17 +7,23 @@ from app.exceptions import LogicalError
 # todo: create class that will handle user (and branch) switching automatically
 
 def create_repo(repo_path: str) -> None:
-    """Creates repo, if it does not exist."""
-    output = run(["git", "-C", ".", "rev-parse", "2>/dev/null;", "echo $?"],
-        capture_output=True,
-        cwd=repo_path)
-    if output.stdout.decode() == "0":
-        print('repo already exists!!!')
+    """Creates a Git repository with a default branch, if it does not exist."""
+    output = run(["git", "-C", repo_path, "rev-parse", "--is-inside-work-tree"],
+                 capture_output=True)
+    if output.returncode == 0 and output.stdout.decode().strip() == "true":
+        print('Repository already exists!')
         return
 
-    output = run(["git", "init"],
-        capture_output=True,
-        cwd=repo_path)
+    output = run(["git", "init"], capture_output=True, cwd=repo_path)
+    _check_output(output)
+
+    # Create an initial commit to ensure a default branch exists
+    initial_file = os.path.join(repo_path, ".gitkeep")
+    with open(initial_file, "w") as f:
+        f.write("")
+    
+    run(["git", "add", ".gitkeep"], capture_output=True, cwd=repo_path)
+    output = run(["git", "commit", "-m", "Initial commit"], capture_output=True, cwd=repo_path)
     _check_output(output)
 
 
