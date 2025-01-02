@@ -10,10 +10,7 @@
 `docker run -p 127.0.0.1:8080:8080 -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api &`
 
 ### Testing
-`docker exec -it <container-id> pytest`
-
-you can get container id from
-`docker ps -q -f "ancestor=wenote-api"`
+`docker exec -it $(docker ps -q -f "ancestor=wenote-api") pytest`
 
 ### For Debug
 ```
