@@ -62,22 +62,39 @@ def test_show_file(temp_git_repo):
 def test_create_branch(temp_git_repo):
     branch_name = "test-branch"
     create_branch(temp_git_repo, branch_name)
-    output = subprocess.run(["git", "branch"], cwd=temp_git_repo, capture_output=True, text=True)
+    subprocess.run(["touch", "aaa"], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "add", "."], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "commit", "-m", "'Initial commit'"], cwd=temp_git_repo, check=True)
+
+    output = subprocess.run(["git", "branch", "-l", "--all"], cwd=temp_git_repo, capture_output=True, text=True)
+
+    print(output.stdout)
     assert branch_name in output.stdout
 
 
 def test_checkout_branch(temp_git_repo):
+    create_branch(temp_git_repo, "master")
+    subprocess.run(["touch", "aaa"], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "add", "."], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "commit", "-m", "'Initial commit'"], cwd=temp_git_repo, check=True)
+
     branch_name = "test-branch"
     create_branch(temp_git_repo, branch_name)
-    checkout_branch(temp_git_repo, branch_name)
+
+    checkout_branch(temp_git_repo, "master")
     current_branch = subprocess.run(["git", "branch", "--show-current"], cwd=temp_git_repo, capture_output=True, text=True)
-    assert current_branch.stdout.strip() == branch_name
+    assert current_branch.stdout.strip() == "master" 
 
 
 def test_branch_exists(temp_git_repo):
     branch_name = "test-branch"
     assert not branch_exists(temp_git_repo, branch_name)
     create_branch(temp_git_repo, branch_name)
+
+    subprocess.run(["touch", "aaa"], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "add", "."], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "commit", "-m", "'Initial commit'"], cwd=temp_git_repo, check=True)
+
     assert branch_exists(temp_git_repo, branch_name)
 
 
@@ -112,12 +129,18 @@ def test_commit(temp_git_repo):
 
 
 def test_merge(temp_git_repo):
+    subprocess.run(["touch", "aaa"], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "add", "."], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "commit", "-m", "'Initial commit'"], cwd=temp_git_repo, check=True)
+
     branch_name = "test-branch"
     create_branch(temp_git_repo, branch_name)
     note_path = "notes/note1.txt"
     os.makedirs(os.path.join(temp_git_repo, "notes"))
+
     with open(os.path.join(temp_git_repo, note_path), "w") as f:
         f.write("Test note")
+
     subprocess.run(["git", "add", note_path], cwd=temp_git_repo, check=True)
     subprocess.run(["git", "commit", "-m", "Add test note"], cwd=temp_git_repo, check=True)
     checkout_branch(temp_git_repo, "master")
@@ -125,8 +148,14 @@ def test_merge(temp_git_repo):
 
 
 def test_delete_branch(temp_git_repo):
+    subprocess.run(["touch", "aaa"], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "add", "."], cwd=temp_git_repo, check=True)
+    subprocess.run(["git", "commit", "-m", "'Initial commit'"], cwd=temp_git_repo, check=True)
+
     branch_name = "test-branch"
     create_branch(temp_git_repo, branch_name)
+    checkout_branch(temp_git_repo, "master")
+
     delete_branch(temp_git_repo, branch_name)
     output = subprocess.run(["git", "branch"], cwd=temp_git_repo, capture_output=True, text=True)
     assert branch_name not in output.stdout
