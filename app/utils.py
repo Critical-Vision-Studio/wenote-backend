@@ -87,11 +87,11 @@ def branch_exists(repo_path:str, name: str):
         raise LogicalError(f"{name}, {branch_count}, in branch_exists func")
     return True
 
-
 def write_note(repo_path: str, note_path: str, note_value: str) -> None:
-    with open(os.path.join(repo_path, note_path), 'w+') as fh:
+    full_path = os.path.join(repo_path, note_path)
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    with open(full_path, 'w+') as fh:
         fh.write(note_value)
-
 
 def add_file(repo_path: str, file: str):
     output = run(["git", "add", f"{file}"],
