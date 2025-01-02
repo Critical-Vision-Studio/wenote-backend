@@ -15,6 +15,7 @@ pydantic = "*"
 pydantic-settings = "*"
 flask = "*"
 gunicorn = "*"
+pre-commit = "*"
 
 [dev-packages]
 

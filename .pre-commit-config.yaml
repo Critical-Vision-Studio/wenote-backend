@@ -1,0 +1,43 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+        name: Global | Check Yaml
+      - id: check-toml
+        name: Global | Check Toml
+      - id: end-of-file-fixer
+        name: Global | End of File Fixer
+      - id: trailing-whitespace
+        name: Global | Trailing Whitespace
+      - id: check-added-large-files
+        name: Global | Check Added Large Files
+
+  - repo: local
+    hooks:
+      - id: poetry
+        name: Api    | Installing Project Dependencies
+        entry: pipenv install
+        language: system
+        require_serial: true
+        always_run: true
+        pass_filenames: false
+        files: '^./'
+
+      - id: ruff
+        name: Api    | Run Ruff
+        entry: ruff check --fix --exit-non-zero-on-fix
+        language: system
+        require_serial: true
+        pass_filenames: false
+        always_run: true
+        files: '^./'
+
+      - id: pyright
+        name: Api    | Run Pyright
+        entry: pyright
+        language: system
+        #types: [python]
+        always_run: true
+        require_serial: true
+        files: '^./'
