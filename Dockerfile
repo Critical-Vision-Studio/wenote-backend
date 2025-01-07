@@ -4,7 +4,7 @@ EXPOSE 8080:8080
 
 WORKDIR /wenote
 
-COPY config.py main.py .env /wenote
+COPY config.py main.py /wenote
 COPY ./app /wenote/app
 
 ENV FLASK_APP pybin.py
