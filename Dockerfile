@@ -5,7 +5,6 @@ EXPOSE 8080:8080
 WORKDIR /wenote
 
 COPY config.py main.py /wenote
-COPY ./app /wenote/app
 
 ENV FLASK_APP pybin.py
 ENV REPO_PATH "/wenote-repo"
@@ -30,4 +29,5 @@ RUN pip install gunicorn
 
 
 WORKDIR /wenote
+COPY ./app ./app
 CMD ["gunicorn", "main:app", "-b", "0.0.0.0:8080"]
