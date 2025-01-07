@@ -6,7 +6,6 @@ app = create_app()
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "* Authorization"
-    response.headers["Access-Control-Max-Age"] = "300"
+    response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
