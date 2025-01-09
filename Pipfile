@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+uvicorn = "==0.22.0"
+uvloop = "*"
+markupsafe = "==2.1.3"
+python-dotenv = "*"
+ruff = "*"
+pyright = "*"
+pytest = "*"
+pydantic = "*"
+pydantic-settings = "*"
+flask = "*"
+gunicorn = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"
