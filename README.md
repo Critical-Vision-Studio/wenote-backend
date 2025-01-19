@@ -4,7 +4,7 @@
 
 `cd wenote-backend`
 
-`docker build -t wenote-api`
+`docker build . -t wenote-api`
 
 ### Running
 `docker run -p 127.0.0.1:8080:8080 -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api &`
