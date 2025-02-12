@@ -107,20 +107,28 @@ class DeleteNoteInput:
 def update_note():
     data = request.json
     input_ = UpdateNoteInput(**data)
-
-    if not branch_exists(settings.REPO_PATH, input_.branch_name):
-        raise LogicalError(f"branch name does not exist - {input_.branch_name}")
-
-    if input_.commit_id != get_commit_id(settings.REPO_PATH, input_.branch_name):
-        raise LogicalError("REQUEST_STATE_OUTDATED")
-
+    
     branch_name = input_.branch_name
-    if branch_name == "master":
+    commit_id   = input_.commit_id
+    on_conflict_branch = is_conflict_branch(branch_name)
+    not_head_commit = commit_id != get_commit_id(settings.REPO_PATH, branch_name)
+
+    if not branch_exists(settings.REPO_PATH, branch_name):
+        raise LogicalError(f"branch name does not exist - {branch_name}")
+
+    if not on_conflict_branch:
         branch_name = f"user-{input_.note_path}"
+    
         if branch_exists(settings.REPO_PATH, branch_name):
             raise LogicalError(f"branch name already exists - {branch_name}")
+        
+        checkout_branch(settings.REPO_PATH, commit_id)
         create_branch(settings.REPO_PATH, branch_name)
-
+    elif not_head_commit: # avoid fixing conflicts based on older commit
+        raise LogicalError(f"REQUEST_STATE_OUTDATED Incoming changes against older commit - conflict resolution supported only against branch HEAD.")
+    else: # on conflict branch and on head (can resolve conflicts)
+        checkout_branch(settings.REPO_PATH, branch_name)
+    
     write_note(settings.REPO_PATH, input_.note_path, input_.note_value)
     add_file(settings.REPO_PATH, input_.note_path)
     commit(settings.REPO_PATH, input_.note_path, f"update {input_.note_path}")
@@ -129,6 +137,7 @@ def update_note():
     if conflict:
         mask_conflicts(settings.REPO_PATH, input_.note_path)
         commit(settings.REPO_PATH, input_.note_path, f"conflict with {input_.note_path}")
+        print("IN CONFLICT")
 
         return jsonify(
             {
@@ -143,6 +152,10 @@ def update_note():
     conflict_on_main = merge(settings.REPO_PATH, branch_name)
     if conflict_on_main:
         raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}")
+    
+    if branch_name == "master":
+        raise LogicalError(f"Unexpected branch: cannot delete master")
+    
     delete_branch(settings.REPO_PATH, branch_name)
 
     return jsonify(

@@ -3,7 +3,6 @@ from logging.handlers import RotatingFileHandler
 import os
 
 from flask import Flask
-
 from config import Settings
 from app.middlewares import exception_handler_middleware
 
@@ -11,7 +10,6 @@ from app.middlewares import exception_handler_middleware
 def create_app(config_class=Settings):
     app = Flask(__name__)
     app.config.from_object(config_class)
-
 
     app.wsgi_app = exception_handler_middleware(app.wsgi_app)
 

@@ -156,3 +156,5 @@ def _check_output(output: CompletedProcess):
 
     return output.stdout.decode()
 
+def is_conflict_branch(branch_name: str):
+    return branch_name.startswith("conflict")
