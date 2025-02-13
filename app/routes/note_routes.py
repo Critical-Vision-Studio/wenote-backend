@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.abspath("../"))
 
 from config import settings
-from app.utils import *
+from app.utils import GitCommander
 from app.exceptions import LogicalError
 from app.cps import mask_conflicts
 
@@ -21,8 +21,9 @@ def get_note():
     if not note_path or not branch_name:
         return jsonify({"error": "Missing required parameters"}), 400
 
-    file_exists(settings.REPO_PATH, note_path, branch_name)
-    note = show_file(settings.REPO_PATH, note_path, branch_name)
+    git = GitCommander(settings.REPO_PATH)
+    git.file_exists(note_path, branch_name)
+    note = git.show_file(note_path, branch_name)
 
     readonly = False
 
@@ -30,7 +31,7 @@ def get_note():
         {
             "note": note,
             "readonly": readonly,
-            "commit_id": get_commit_id(settings.REPO_PATH, branch_name),
+            "commit_id": git.get_commit_id(branch_name),
         }
     )
 
@@ -41,14 +42,15 @@ def get_note_names():
     if not branch_name:
         return jsonify({"error": "Missing required parameters"}), 400
 
-    if not branch_exists(settings.REPO_PATH, branch_name):
+    git = GitCommander(settings.REPO_PATH)
+    if not git.branch_exists(branch_name):
         print("BRANCH DOES NOT EXISTS, ", branch_name)
         raise LogicalError(f"branch does not exist - {branch_name}")
 
-    if branch_name != get_current_branch(settings.REPO_PATH):
-        checkout_branch(settings.REPO_PATH, branch_name)
+    if branch_name != git.get_current_branch():
+        git.checkout_branch(branch_name)
 
-    files = list_files(settings.REPO_PATH, branch_name)
+    files = git.list_files(branch_name)
     return jsonify({"branch_name": branch_name, "notes": files})
 
 
@@ -58,34 +60,35 @@ def create_note():
     note_path = data.get("note_path")
     note_value = data.get("note_value")
 
-    print(list_branches(settings.REPO_PATH))
+    git = GitCommander(settings.REPO_PATH)
+    print(git.list_branches())
     if not note_path or not note_value:
         return jsonify({"error": "Missing required parameters"}), 400
 
     branch_name = f"user-{note_path}"
 
-    if branch_exists(settings.REPO_PATH, branch_name):
+    if git.branch_exists(branch_name):
         raise LogicalError(f"branch name already exists - {branch_name}")
 
-    create_branch(settings.REPO_PATH, branch_name)
-    write_note(settings.REPO_PATH, note_path, note_value)
-    add_file(settings.REPO_PATH, note_path)
-    commit(settings.REPO_PATH, note_path, "msg")
+    git.create_branch(branch_name)
+    git.write_note(note_path, note_value)
+    git.add_file(note_path)
+    git.commit(note_path, "msg")
 
-    conflict = merge(settings.REPO_PATH, settings.MAIN_BRANCH)
+    conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, note_path)
-        commit(settings.REPO_PATH, note_path, f"conflict with {note_path}")
-        merge(settings.REPO_PATH, settings.MAIN_BRANCH)
+        git.commit(note_path, f"conflict with {note_path}")
+        git.merge(settings.MAIN_BRANCH)
 
-        note_value = show_file(settings.REPO_PATH, note_path, settings.MAIN_BRANCH)
+        note_value = git.show_file(note_path, settings.MAIN_BRANCH)
         return jsonify({"status": "conflict", "note": note_value})
 
-    checkout_branch(settings.REPO_PATH, settings.MAIN_BRANCH)
-    conflict = merge(settings.REPO_PATH, branch_name)
+    git.checkout_branch(settings.MAIN_BRANCH)
+    conflict = git.merge(branch_name)
     if conflict:
         raise LogicalError(f"Unexpected conflicts while merging {branch_name} into master")
-    delete_branch(settings.REPO_PATH, branch_name)
+    git.delete_branch(branch_name)
     return jsonify({"status": "created"}), 201
 
 
@@ -109,61 +112,64 @@ def update_note():
     input_ = UpdateNoteInput(**data)
     
     branch_name = input_.branch_name
-    commit_id   = input_.commit_id
-    on_conflict_branch = is_conflict_branch(branch_name)
-    not_head_commit = commit_id != get_commit_id(settings.REPO_PATH, branch_name)
+    commit_id = input_.commit_id
+    git = GitCommander(settings.REPO_PATH)
+    on_conflict_branch = git.is_conflict_branch(branch_name)
+    not_head_commit = commit_id != git.get_commit_id(branch_name)
 
-    if not branch_exists(settings.REPO_PATH, branch_name):
+    if not git.branch_exists(branch_name):
         raise LogicalError(f"branch name does not exist - {branch_name}")
 
     if not on_conflict_branch:
         branch_name = f"user-{input_.note_path}"
     
-        if branch_exists(settings.REPO_PATH, branch_name):
+        if git.branch_exists(branch_name):
             raise LogicalError(f"branch name already exists - {branch_name}")
         
-        checkout_branch(settings.REPO_PATH, commit_id)
-        create_branch(settings.REPO_PATH, branch_name)
-    elif not_head_commit: # avoid fixing conflicts based on older commit
-        raise LogicalError(f"REQUEST_STATE_OUTDATED Incoming changes against older commit - conflict resolution supported only against branch HEAD.")
-    else: # on conflict branch and on head (can resolve conflicts)
-        checkout_branch(settings.REPO_PATH, branch_name)
+        git.checkout_branch(commit_id)
+        git.create_branch(branch_name)
+    elif not_head_commit:  # avoid fixing conflicts based on older commit
+        raise LogicalError(
+            "REQUEST_STATE_OUTDATED Incoming changes against older commit - conflict resolution supported only against branch HEAD."
+        )
+    else:  # on conflict branch and on head (can resolve conflicts)
+        git.checkout_branch(branch_name)
     
-    write_note(settings.REPO_PATH, input_.note_path, input_.note_value)
-    add_file(settings.REPO_PATH, input_.note_path)
-    commit(settings.REPO_PATH, input_.note_path, f"update {input_.note_path}")
+    git.write_note(input_.note_path, input_.note_value)
+    git.add_file(input_.note_path)
+    git.commit(input_.note_path, f"update {input_.note_path}")
 
-    conflict = merge(settings.REPO_PATH, settings.MAIN_BRANCH)
+    conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, input_.note_path)
-        commit(settings.REPO_PATH, input_.note_path, f"conflict with {input_.note_path}")
+        git.commit(input_.note_path, f"conflict with {input_.note_path}")
         print("IN CONFLICT")
 
         return jsonify(
             {
                 "status": "conflict",
-                "note": show_file(settings.REPO_PATH, input_.note_path, branch_name),
+                "note": git.show_file(input_.note_path, branch_name),
                 "branch_name": branch_name,
-                "commit_id": get_commit_id(settings.REPO_PATH, "HEAD"),
+                "commit_id": git.get_commit_id("HEAD"),
             }
         )
 
-    checkout_branch(settings.REPO_PATH, settings.MAIN_BRANCH)
-    conflict_on_main = merge(settings.REPO_PATH, branch_name)
+    git.checkout_branch(settings.MAIN_BRANCH)
+    conflict_on_main = git.merge(branch_name)
     if conflict_on_main:
         raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}")
     
     if branch_name == "master":
-        raise LogicalError(f"Unexpected branch: cannot delete master")
+        raise LogicalError("Unexpected branch: cannot delete master")
     
-    delete_branch(settings.REPO_PATH, branch_name)
+    git.delete_branch(branch_name)
 
     return jsonify(
         {
             "status": "ok",
-            "note": show_file(settings.REPO_PATH, input_.note_path, settings.MAIN_BRANCH),
+            "note": git.show_file(input_.note_path, settings.MAIN_BRANCH),
             "branch_name": settings.MAIN_BRANCH,
-            "commit_id": get_commit_id(settings.REPO_PATH, "HEAD"),
+            "commit_id": git.get_commit_id("HEAD"),
         }
     )
 
@@ -173,28 +179,29 @@ def delete_note():
     data = request.json
     input_ = DeleteNoteInput(**data)
 
-    file_exists(settings.REPO_PATH, input_.note_path, input_.branch_name)
+    git = GitCommander(settings.REPO_PATH)
+    git.file_exists(input_.note_path, input_.branch_name)
 
     branch_name = f"user-delete-{input_.note_path}"
-    create_branch(settings.REPO_PATH, branch_name)
+    git.create_branch(branch_name)
 
-    delete_file(settings.REPO_PATH, input_.note_path)
-    commit(settings.REPO_PATH, input_.note_path, f"deleted {input_.note_path}")
+    git.delete_file(input_.note_path)
+    git.commit(input_.note_path, f"deleted {input_.note_path}")
 
-    conflict = merge(settings.REPO_PATH, settings.MAIN_BRANCH)
+    conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, input_.note_path)
-        commit(settings.REPO_PATH, input_.note_path, f"conflict with deletion of {input_.note_path}")
+        git.commit(input_.note_path, f"conflict with deletion of {input_.note_path}")
 
-        note_value = show_file(settings.REPO_PATH, input_.note_path, settings.MAIN_BRANCH)
+        note_value = git.show_file(input_.note_path, settings.MAIN_BRANCH)
         return jsonify({"status": "conflict", "note": note_value})
 
-    checkout_branch(settings.REPO_PATH, settings.MAIN_BRANCH)
-    conflict_on_main = merge(settings.REPO_PATH, branch_name)
+    git.checkout_branch(settings.MAIN_BRANCH)
+    conflict_on_main = git.merge(branch_name)
     if conflict_on_main:
         raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}.")
 
-    delete_branch(settings.REPO_PATH, branch_name)
+    git.delete_branch(branch_name)
 
     return jsonify({"status": "ok", "message": f"Note '{input_.note_path}' deleted."})
 
