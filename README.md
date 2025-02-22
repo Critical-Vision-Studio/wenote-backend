@@ -4,13 +4,15 @@
 
 `cd wenote-backend`
 
-`docker build . -t wenote-api`
-
 ### Running
-`docker run -p 127.0.0.1:8080:8080 -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api &`
+`make`
 
 ### Testing
-`docker exec -it $(docker ps -q -f "ancestor=wenote-api") pytest`
+`make test`
+
+### building
+if you want just to build, run:
+`make build`
 
 ### For Debug
 ```
