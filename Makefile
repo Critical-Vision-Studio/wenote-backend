@@ -1,12 +1,16 @@
 DOCKER ?= docker
 HOST_IP ?= 127.0.0.1
 HOST_PORT ?= 8080
+DEBUG ?= 0
 
 .PHONY: build start test clean
 
 
 start: build
-	$(DOCKER) run -p $(HOST_IP):$(HOST_PORT):8080 -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api &
+	$(DOCKER) run -p $(HOST_IP):$(HOST_PORT):8080 -e MAIN_BRANCH="master" -e DEBUG=0 wenote-api &
+
+start_debug: build
+	$(DOCKER) run -p $(HOST_IP):$(HOST_PORT):8080 -it -e MAIN_BRANCH="master" -e DEBUG=1 wenote-api
 
 test: build start
 	sleep 2

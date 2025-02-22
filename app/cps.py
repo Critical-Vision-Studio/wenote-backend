@@ -1,3 +1,5 @@
+import os
+
 conflict_marker_sep = "="*7
 conflict_marker_begin = "<"*7
 conflict_marker_end = ">"*7
@@ -29,13 +31,14 @@ def mask_conflicts(repo_path: str, file_path: str):
 
     search_for = is_begin
 
-    with open(repo_path+file_path, "r") as f:
+    print(repo_path, file_path)
+    with open(os.path.join(repo_path, file_path), "r") as f:
         file_value = f.readlines()
 
     for index, line in enumerate(file_value):
         if search_for(line):
             file_value[index] = wenote_conflict_marker + " " + line
 
-    with open(repo_path+file_path, "w") as f:
+    with open(os.path.join(repo_path, file_path), "w") as f:
         f.writelines(file_value)
 

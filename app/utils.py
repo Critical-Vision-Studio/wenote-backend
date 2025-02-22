@@ -128,12 +128,20 @@ class GitCommander:
         )
         return self._check_output(output)
 
-    def commit(self, file_path: str, msg: str) -> str:
-        output = run(
-            ["git", "commit", file_path, "-m", msg],
-            capture_output=True,
-            cwd=self.repo_path
-        )
+    def commit(self, file_path: str | None = None, msg: str = "msg") -> str:
+        if file_path:
+            output = run(
+                ["git", "commit", file_path, "-m", msg],
+                capture_output=True,
+                cwd=self.repo_path
+            )
+        else:
+            output = run(
+                ["git", "commit", "-m", msg],
+                capture_output=True,
+                cwd=self.repo_path
+            )
+
         return self._check_output(output)
 
     def merge(self, branch: str) -> bool:

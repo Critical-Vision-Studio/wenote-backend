@@ -115,3 +115,21 @@ def test_delete_note(client, temp_repo):
 
     assert not os.path.exists(os.path.join(temp_repo, file_name))
 
+
+def test_delete_note(client, temp_repo):
+    file_name = "note_to_delete.txt"
+    branch_name = "master"
+
+    add_file_to_repo(temp_repo, file_name, "This note will be deleted.")
+
+    response = client.delete(
+        "/apiv1/delete-note",
+        json={"note_path": file_name, "branch_name": branch_name}
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert f"Note '{file_name}' deleted." in data["message"]
+
+    assert not os.path.exists(os.path.join(temp_repo, file_name))
+

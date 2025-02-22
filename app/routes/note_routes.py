@@ -78,6 +78,7 @@ def create_note():
     conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, note_path)
+        git.add_file(note_path)
         git.commit(note_path, f"conflict with {note_path}")
         git.merge(settings.MAIN_BRANCH)
 
@@ -137,20 +138,21 @@ def update_note():
     
     git.write_note(input_.note_path, input_.note_value)
     git.add_file(input_.note_path)
-    git.commit(input_.note_path, f"update {input_.note_path}")
+    git.commit(msg=f"update {input_.note_path}")
 
     conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, input_.note_path)
-        git.commit(input_.note_path, f"conflict with {input_.note_path}")
-        print("IN CONFLICT")
+        git.add_file(input_.note_path) 
+        git.commit(msg=f"conflict with {input_.note_path}")
 
+        git.checkout_branch(settings.MAIN_BRANCH)
         return jsonify(
             {
                 "status": "conflict",
                 "note": git.show_file(input_.note_path, branch_name),
                 "branch_name": branch_name,
-                "commit_id": git.get_commit_id("HEAD"),
+                "commit_id": git.get_commit_id(branch_name),
             }
         )
 
@@ -161,7 +163,7 @@ def update_note():
     
     if branch_name == "master":
         raise LogicalError("Unexpected branch: cannot delete master")
-    
+
     git.delete_branch(branch_name)
 
     return jsonify(
@@ -191,6 +193,7 @@ def delete_note():
     conflict = git.merge(settings.MAIN_BRANCH)
     if conflict:
         mask_conflicts(settings.REPO_PATH, input_.note_path)
+        git.add_file(input_.note_path)
         git.commit(input_.note_path, f"conflict with deletion of {input_.note_path}")
 
         note_value = git.show_file(input_.note_path, settings.MAIN_BRANCH)

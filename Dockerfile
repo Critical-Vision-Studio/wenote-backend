@@ -27,7 +27,10 @@ COPY ./requirements.txt /wenote/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /wenote/requirements.txt
 RUN pip install gunicorn
 
-
 WORKDIR /wenote
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 COPY ./app ./app
-CMD ["gunicorn", "main:app", "-b", "0.0.0.0:8080"]
+CMD ["/entrypoint.sh"]
