@@ -16,7 +16,7 @@ test: build start
 	sleep 2
 	$(DOCKER) exec -it $$( $(DOCKER) ps -q -f "ancestor=wenote-api" ) pytest
 
-build:
+build: clean
 	$(DOCKER) build . -t wenote-api
 
 clean:

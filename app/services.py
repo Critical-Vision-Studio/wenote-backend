@@ -158,7 +158,7 @@ def update_note(repo_path: str, branch_name: str, commit_id: str,
     if conflict:
         mask_conflicts(repo_path, note_path)
         git.add_file(note_path) 
-        git.commit(msg=f"conflict with {note_path}")
+        git.commit(msg=f"gonflict with {note_path}")
         git.checkout_branch(settings.MAIN_BRANCH)
 
         return ("conflict", git.show_file(note_path, branch_name),
