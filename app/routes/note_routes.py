@@ -10,6 +10,7 @@ from app.exceptions import LogicalError
 from app.cps import mask_conflicts
 from app.routes import bp as app
 from app.serializers import UpdateNoteInput, DeleteNoteInput
+from app.services import update_note
 
 
 @app.route("/apiv1/get-note", methods=["GET"])
@@ -92,70 +93,18 @@ def create_note():
 
 
 @app.route("/apiv1/update-note", methods=["PUT"])
-def update_note():
+def update_note_view():
     data = request.json
     input_ = UpdateNoteInput(**data)
-    
-    branch_name = input_.branch_name
-    commit_id = input_.commit_id
-    git = GitCommander(settings.REPO_PATH)
-    on_conflict_branch = git.is_conflict_branch(branch_name)
-    not_head_commit = commit_id != git.get_commit_id(branch_name)
 
-    if not git.branch_exists(branch_name):
-        raise LogicalError(f"branch name does not exist - {branch_name}")
-
-    if not on_conflict_branch:
-        branch_name = f"user-{input_.note_path}"
-    
-        if git.branch_exists(branch_name):
-            raise LogicalError(f"branch name already exists - {branch_name}")
-        
-        git.checkout_branch(commit_id)
-        git.create_branch(branch_name)
-    elif not_head_commit:  # avoid fixing conflicts based on older commit
-        raise LogicalError(
-            "REQUEST_STATE_OUTDATED Incoming changes against older commit - conflict resolution supported only against branch HEAD."
-        )
-    else:  # on conflict branch and on head (can resolve conflicts)
-        git.checkout_branch(branch_name)
-    
-    git.write_note(input_.note_path, input_.note_value)
-    git.add_file(input_.note_path)
-    git.commit(msg=f"update {input_.note_path}")
-
-    conflict = git.merge(settings.MAIN_BRANCH)
-    if conflict:
-        mask_conflicts(settings.REPO_PATH, input_.note_path)
-        git.add_file(input_.note_path) 
-        git.commit(msg=f"conflict with {input_.note_path}")
-        git.checkout_branch(settings.MAIN_BRANCH)
-
-        return jsonify(
-            {
-                "status": "conflict",
-                "note": git.show_file(input_.note_path, branch_name),
-                "branch_name": branch_name,
-                "commit_id": git.get_commit_id(branch_name),
-            }
-        )
-
-    git.checkout_branch(settings.MAIN_BRANCH)
-    conflict_on_main = git.merge(branch_name)
-    if conflict_on_main:
-        raise LogicalError(f"Unexpected conflicts while merging {branch_name} into {settings.MAIN_BRANCH}")
-    
-    if branch_name == "master":
-        raise LogicalError("Unexpected branch: cannot delete master")
-
-    git.delete_branch(branch_name)
-
+    status, note_value, branch_name, commit_id = update_note(input_.) # TODO: REPO_PATH also change that model class.
+   
     return jsonify(
         {
-            "status": "ok",
-            "note": git.show_file(input_.note_path, settings.MAIN_BRANCH),
-            "branch_name": settings.MAIN_BRANCH,
-            "commit_id": git.get_commit_id("HEAD"),
+            "status": status,
+            "note": note_value, 
+            "branch_name": branch_name,
+            "commit_id": commit_id,
         }
     )
 
