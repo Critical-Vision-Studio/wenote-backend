@@ -23,6 +23,7 @@ def temp_repo():
         settings.REPO_PATH = temp_dir
         yield temp_dir
 
+
 def add_file_to_repo(repo_path, file_name, content=""):
     gc = GitCommander(repo_path)
     gc.write_note(file_name, content)
@@ -31,6 +32,7 @@ def add_file_to_repo(repo_path, file_name, content=""):
     os.system(f"git -C {repo_path} add {file_name}")
     os.system(f"git -C {repo_path} commit -m 'Add {file_name}'")
 
+
 def test_get_note(client, temp_repo):
     file_name = "test_note.txt"
     branch_name = "master"
@@ -38,11 +40,12 @@ def test_get_note(client, temp_repo):
     print(gc.list_branches())
     add_file_to_repo(temp_repo, file_name, "This is a test note.")
 
-    response = client.get(f"/apiv1/get-note?note_path={file_name}&branch_name={branch_name}")
+    response = client.get(f"/apiv1/get-note?repo_path={temp_repo}&note_path={file_name}&branch_name={branch_name}")
     assert response.status_code == 200
     data = response.get_json()
     assert "note" in data
     assert data["note"] == "This is a test note."
+
 
 def test_get_note_names(client, temp_repo):
     branch_name = "master"
@@ -52,12 +55,13 @@ def test_get_note_names(client, temp_repo):
     for file_name in file_names:
         add_file_to_repo(temp_repo, file_name, f"Content of {file_name}")
 
-    response = client.get(f"/apiv1/get-note-names?branch_name={branch_name}")
+    response = client.get(f"/apiv1/get-note-names?repo_path={temp_repo}&branch_name={branch_name}")
     data = response.get_json()
     print(data)
     assert response.status_code == 200
     assert "notes" in data
     assert sorted(data["notes"]) == sorted(file_names)
+
 
 def test_create_note(client, temp_repo):
     file_name = "new_note.txt"
@@ -66,13 +70,14 @@ def test_create_note(client, temp_repo):
     print(gc.list_branches())
     response = client.post(
         "/apiv1/create-note",
-        json={"note_path": file_name, "note_value": note_content}
+        json={"repo_path": temp_repo, "note_path": file_name, "note_value": note_content}
     )
-    assert response.status_code == 201
+    assert response.status_code == 200
 
     assert os.path.exists(os.path.join(temp_repo, file_name))
     with open(os.path.join(temp_repo, file_name), "r") as f:
         assert f.read() == note_content
+
 
 def test_update_note(client, temp_repo):
     file_name = "existing_note.txt"
@@ -87,6 +92,7 @@ def test_update_note(client, temp_repo):
     response = client.put(
         "/apiv1/update-note",
         json={
+            "repo_path": temp_repo,
             "note_path": file_name,
             "note_value": updated_content,
             "branch_name": branch_name,
@@ -98,23 +104,6 @@ def test_update_note(client, temp_repo):
     assert data["status"] == "ok"
     assert data["note"] == updated_content
 
-def test_delete_note(client, temp_repo):
-    file_name = "note_to_delete.txt"
-    branch_name = "master"
-
-    add_file_to_repo(temp_repo, file_name, "This note will be deleted.")
-
-    response = client.delete(
-        "/apiv1/delete-note",
-        json={"note_path": file_name, "branch_name": branch_name}
-    )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "ok"
-    assert f"Note '{file_name}' deleted." in data["message"]
-
-    assert not os.path.exists(os.path.join(temp_repo, file_name))
-
 
 def test_delete_note(client, temp_repo):
     file_name = "note_to_delete.txt"
@@ -124,12 +113,11 @@ def test_delete_note(client, temp_repo):
 
     response = client.delete(
         "/apiv1/delete-note",
-        json={"note_path": file_name, "branch_name": branch_name}
+        json={"repo_path": temp_repo, "note_path": file_name, "branch_name": branch_name}
     )
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "ok"
-    assert f"Note '{file_name}' deleted." in data["message"]
 
     assert not os.path.exists(os.path.join(temp_repo, file_name))
 

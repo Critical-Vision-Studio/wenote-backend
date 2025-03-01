@@ -20,5 +20,7 @@ build:
 	$(DOCKER) build . -t wenote-api
 
 clean:
+	$(DOCKER) stop $$( $(DOCKER) ps -q -f "ancestor=wenote-api" ) 2> /dev/null || true
 	$(DOCKER) rm -f $$( $(DOCKER) ps -q -f "ancestor=wenote-api" ) 2> /dev/null || true
+
 
