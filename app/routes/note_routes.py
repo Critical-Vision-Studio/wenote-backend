@@ -11,27 +11,27 @@ from app.services import update_note, delete_note, create_note, get_note, get_no
 
 @app.route("/apiv1/get-note", methods=["GET"])
 def get_note_view():
-    repo_path = request.args.get("repo_path")
+    repo_name = request.args.get("repo_name")
     note_path = request.args.get("note_path")
     branch_name = request.args.get("branch_name")
 
     if not note_path or not branch_name:
         return jsonify({"error": "Missing required parameters"}), 400
 
-    data: dict = get_note(repo_path, note_path, branch_name)
+    data: dict = get_note(repo_name, note_path, branch_name)
 
     return jsonify(data)
 
 
 @app.route("/apiv1/get-note-names", methods=["GET"])
 def get_note_names_view():
-    repo_path = request.args.get("repo_path")
+    repo_name = request.args.get("repo_name")
     branch_name = request.args.get("branch_name")
 
     if not branch_name:
         return jsonify({"error": "Missing required parameters"}), 400
 
-    data: dict = get_note_names(repo_path, branch_name)
+    data: dict = get_note_names(repo_name, branch_name)
 
     return jsonify(data)
 
@@ -39,11 +39,11 @@ def get_note_names_view():
 @app.route("/apiv1/create-note", methods=["POST"])
 def create_note_view():
     data = request.json
-    repo_path = data.get("repo_path")
+    repo_name = data.get("repo_name")
     note_path = data.get("note_path")
     note_value = data.get("note_value")
 
-    data: dict = create_note(repo_path, note_path, note_value)
+    data: dict = create_note(repo_name, note_path, note_value)
 
     return jsonify(data)
 
@@ -53,7 +53,7 @@ def update_note_view():
     data = request.json
     input_ = UpdateNoteInput(**data)
 
-    status, note_value, branch_name, commit_id = update_note(input_.repo_path, 
+    status, note_value, branch_name, commit_id = update_note(input_.repo_name, 
                                                              input_.branch_name,
                                                              input_.commit_id,
                                                              input_.note_path,
@@ -74,7 +74,7 @@ def delete_note_view():
     data = request.json
     input_ = DeleteNoteInput(**data)
 
-    status, note_value = delete_note(input_.repo_path, 
+    status, note_value = delete_note(input_.repo_name, 
                                      input_.note_path, 
                                      input_.branch_name)
 

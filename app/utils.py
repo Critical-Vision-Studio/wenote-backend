@@ -5,26 +5,10 @@ from app.exceptions import LogicalError
 
 class GitCommander:
     def __init__(self, repo_path: str):
-        """
-        Initialize with the repository path.
-        """
         self.repo_path = repo_path
 
-    def _check_output(self, output: CompletedProcess) -> str:
-        """
-        Checks for errors in the CompletedProcess and returns the stdout as a string.
-        """
-        def check_for_error(stream: bytes) -> bool:
-            return b"error" in stream or b"fatal" in stream
-
-        if check_for_error(output.stderr):
-            print("ERR: in _check_output:", output.stderr)
-            raise LogicalError(output.stderr)
-        return output.stdout.decode()
-
     def create_repo(self) -> None:
-        """
-        Creates a Git repository with a default branch, if it does not exist.
+        """Creates a Git repository with a default branch, if it does not exist.
         """
         output = run(
             ["git", "-C", self.repo_path, "rev-parse", "--is-inside-work-tree"],
@@ -187,5 +171,17 @@ class GitCommander:
 
     def is_conflict_branch(self, branch_name: str) -> bool:
         return branch_name.startswith("conflict")
+
+    def _check_output(self, output: CompletedProcess) -> str:
+        """
+        Checks for errors in the CompletedProcess and returns the stdout as a string.
+        """
+        def check_for_error(stream: bytes) -> bool:
+            return b"error" in stream or b"fatal" in stream
+
+        if check_for_error(output.stderr):
+            print("ERR: in _check_output:", output.stderr)
+            raise LogicalError(output.stderr)
+        return output.stdout.decode()
 
 
