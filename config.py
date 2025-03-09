@@ -1,5 +1,5 @@
 import logging
-
+from typing import Optional
 from pydantic_settings import BaseSettings 
 
 logging.basicConfig(
@@ -15,9 +15,9 @@ logger.setLevel(logging.getLevelName(logging.DEBUG))
 
 
 class Settings(BaseSettings):
-    DEBUG: bool
-    REPO_PATH: str
-    MAIN_BRANCH: str
+    DEBUG: bool = True
+    REPO_PATH: Optional[str] = None
+    MAIN_BRANCH: str = "master"
 
 
-settings = Settings(_env_file=".env")
+settings = Settings(_env_file=".env", _env_file_encoding="utf-8")

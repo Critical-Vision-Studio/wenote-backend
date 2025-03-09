@@ -3,6 +3,13 @@
 # Exit on any error, undefined variables, and pipeline failures
 set -euo pipefail
 
+# Get absolute paths
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
+
 # Help message
 show_help() {
     echo "Usage: $0 [OPTIONS] [TEST_GROUP]"
@@ -77,33 +84,45 @@ TEST_GROUP="${TEST_GROUP:-all}"
 # Clean up test artifacts if requested
 if [ -n "$CLEAN" ]; then
     echo "Cleaning up test artifacts..."
-    rm -rf .coverage htmlcov .pytest_cache tests/__pycache__ tests/*/__pycache__
+    rm -rf "$SCRIPT_DIR"/.coverage "$SCRIPT_DIR"/htmlcov "$SCRIPT_DIR"/.pytest_cache "$SCRIPT_DIR"/tests/__pycache__ "$SCRIPT_DIR"/tests/*/__pycache__
 fi
 
 # Create necessary directories and files
 echo "Creating necessary directories and files..."
-mkdir -p logs
-touch logs/logs.txt
+mkdir -p "$SCRIPT_DIR/logs"
+touch "$SCRIPT_DIR/logs/logs.txt"
 
-# Create test environment file
-echo "Creating test environment file..."
-cat > ../.env << EOL
-DEBUG=true
-REPO_PATH=/tmp/test-repo
-MAIN_BRANCH=master
-EOL
+# Check for .env file
+ENV_FILE="$PROJECT_ROOT/.env"
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Warning: .env file not found at $ENV_FILE"
+    echo "Please create it with the required settings:"
+    echo "DEBUG=true"
+    echo "REPO_PATH=/path/to/repo"
+    echo "MAIN_BRANCH=master"
+    exit 1
+fi
 
-# Setup virtual environment path (in parent directory)
-VENV_DIR="../.venv"
+# Setup virtual environment path
+VENV_DIR="$PROJECT_ROOT/.venv"
 
-# Activate virtual environment
-echo "Activating virtual environment from parent directory..."
-source "${VENV_DIR}/bin/activate"
+# Create virtual environment if it doesn't exist
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment in $VENV_DIR..."
+    python3 -m venv .venv
+    source "$VENV_DIR/bin/activate"
+    echo "Installing dependencies..."
+    pip install -r "$SCRIPT_DIR/requirements.txt"
+else
+    # Activate virtual environment
+    echo "Activating virtual environment..."
+    source "$VENV_DIR/bin/activate"
+fi
 
 # Set up testing environment using modern Flask configuration
 export FLASK_DEBUG=1
 export FLASK_TESTING=1
-export PYTHONPATH=$(dirname $(pwd))
+export PYTHONPATH="$PROJECT_ROOT"
 
 # Set temporary Git configuration via environment variables
 export GIT_AUTHOR_NAME="Test Runner"
@@ -111,40 +130,40 @@ export GIT_AUTHOR_EMAIL="test@example.com"
 export GIT_COMMITTER_NAME="Test Runner"
 export GIT_COMMITTER_EMAIL="test@example.com"
 
-# Base pytest command - note we're in app directory already
-PYTEST_CMD="pytest $VERBOSE $PARALLEL $TEST_FILTER --cov=. --cov-report=term $HTML_REPORT"
+# Base pytest command - now running from project root
+PYTEST_CMD="pytest $VERBOSE $PARALLEL $TEST_FILTER --cov=app --cov-report=term $HTML_REPORT"
 
 # Run tests based on group or specific file
 echo "Running tests with coverage..."
 
 if [ -n "$SPECIFIC_FILE" ]; then
     # Run specific test file
-    $PYTEST_CMD "$SPECIFIC_FILE"
+    eval "$PYTEST_CMD \"$SCRIPT_DIR/$SPECIFIC_FILE\""
 else
     case "$TEST_GROUP" in
         "unit")
             echo "Running unit tests..."
-            $PYTEST_CMD tests/unit/
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/unit/"
             ;;
         "integration")
             echo "Running integration tests..."
-            $PYTEST_CMD tests/integration/
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/integration/"
             ;;
         "fast")
             echo "Running only the mocked tests for speed..."
-            $PYTEST_CMD tests/unit/test_routes.py
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/unit/test_routes.py"
             ;;
         "security")
             echo "Running only security tests..."
-            $PYTEST_CMD tests/unit/test_security.py
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/unit/test_security.py"
             ;;
         "performance")
             echo "Running performance tests..."
-            $PYTEST_CMD tests/integration/test_performance.py
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/integration/test_performance.py"
             ;;
         *)
             # All tests with coverage
-            $PYTEST_CMD tests/
+            eval "$PYTEST_CMD $SCRIPT_DIR/tests/"
             ;;
     esac
 fi
@@ -153,7 +172,7 @@ echo "Tests completed successfully!"
 
 # Show coverage report location if HTML report was generated
 if [ -n "$HTML_REPORT" ]; then
-    echo "HTML coverage report generated in htmlcov/index.html"
+    echo "HTML coverage report generated in $SCRIPT_DIR/htmlcov/index.html"
 fi
 
 # Deactivate virtual environment

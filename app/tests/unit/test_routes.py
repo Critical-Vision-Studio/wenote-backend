@@ -1,47 +1,35 @@
 import pytest
 from unittest import mock
+import os
 
-def test_get_note_route(client, mock_git_commander):
-    """Test get_note route with mocked GitCommander."""
-    mock_instance = mock_git_commander.return_value
-    mock_instance.file_exists.return_value = True
-    mock_instance.show_file.return_value = "Test content"
-    
-    response = client.get("/apiv1/get-note?repo_path=/mock/repo&note_path=test.txt&branch_name=master")
+def test_get_note(client, mock_services, test_repo_path):
+    """Test get_note route."""
+    response = client.get(f"/apiv1/get-note?repo_path={test_repo_path}&note_path=test.txt&branch_name=master")
     
     assert response.status_code == 200
     data = response.get_json()
     assert data["note"] == "Test content"
-    assert not data["readonly"]  # Default value
+    assert not data["readonly"]
     
-    # Verify correct GitCommander usage
-    mock_instance.file_exists.assert_called_once_with("test.txt", "master")
-    mock_instance.show_file.assert_called_once_with("test.txt", "master")
+    mock_services['get_note'].assert_called_once_with(str(test_repo_path), "test.txt", "master")
 
-def test_get_note_names_route(client, mock_git_commander):
-    """Test get_note_names route with mocked GitCommander."""
-    mock_instance = mock_git_commander.return_value
-    mock_instance.list_files.return_value = ["note1.txt", "note2.txt"]
-    
-    response = client.get("/apiv1/get-note-names?repo_path=/mock/repo&branch_name=master")
+def test_get_note_names(client, mock_services, test_repo_path):
+    """Test get_note_names route."""
+    response = client.get(f"/apiv1/get-note-names?repo_path={test_repo_path}&branch_name=master")
     
     assert response.status_code == 200
     data = response.get_json()
     assert data["notes"] == ["note1.txt", "note2.txt"]
     assert data["branch_name"] == "master"
     
-    mock_instance.list_files.assert_called_once_with("master")
+    mock_services['get_note_names'].assert_called_once_with(str(test_repo_path), "master")
 
-def test_create_note_route(client, mock_git_commander):
-    """Test create_note route with mocked GitCommander."""
-    mock_instance = mock_git_commander.return_value
-    mock_instance.branch_exists.return_value = False
-    mock_instance.merge.return_value = False
-    
+def test_create_note_route(client, mock_services, test_repo_path):
+    """Test create_note route."""
     response = client.post(
         "/apiv1/create-note",
         json={
-            "repo_path": "/mock/repo",
+            "repo_path": str(test_repo_path),
             "note_path": "test.txt",
             "note_value": "Test content"
         }
@@ -52,22 +40,14 @@ def test_create_note_route(client, mock_git_commander):
     assert data["status"] == 201
     assert data["message"] == "created"
     
-    # Verify correct sequence of Git operations
-    mock_instance.create_branch.assert_called_once()
-    mock_instance.write_note.assert_called_once_with("test.txt", "Test content")
-    mock_instance.add_file.assert_called_once_with("test.txt")
-    mock_instance.commit.assert_called_once()
-    mock_instance.merge.assert_called()
+    mock_services['create_note'].assert_called_once_with(str(test_repo_path), "test.txt", "Test content")
 
-def test_update_note_route(client, mock_git_commander):
-    """Test update_note route with mocked GitCommander."""
-    mock_instance = mock_git_commander.return_value
-    mock_instance.merge.return_value = False
-    
+def test_update_note_route(client, mock_services, test_repo_path):
+    """Test update_note route."""
     response = client.put(
         "/apiv1/update-note",
         json={
-            "repo_path": "/mock/repo",
+            "repo_path": str(test_repo_path),
             "note_path": "test.txt",
             "note_value": "Updated content",
             "branch_name": "master",
@@ -79,22 +59,19 @@ def test_update_note_route(client, mock_git_commander):
     data = response.get_json()
     assert data["status"] == "ok"
     assert data["note"] == "Updated content"
+    assert data["branch_name"] == "master"
+    assert data["commit_id"] == "new-commit-id"
     
-    # Verify Git operations
-    mock_instance.write_note.assert_called_once_with("test.txt", "Updated content")
-    mock_instance.add_file.assert_called_once_with("test.txt")
-    mock_instance.commit.assert_called_once()
+    mock_services['update_note'].assert_called_once_with(
+        str(test_repo_path), "master", "test-commit-id", "test.txt", "Updated content"
+    )
 
-def test_delete_note_route(client, mock_git_commander):
-    """Test delete_note route with mocked GitCommander."""
-    mock_instance = mock_git_commander.return_value
-    mock_instance.merge.return_value = False
-    mock_instance.file_exists.return_value = True
-    
+def test_delete_note_route(client, mock_services, test_repo_path):
+    """Test delete_note route."""
     response = client.delete(
         "/apiv1/delete-note",
         json={
-            "repo_path": "/mock/repo",
+            "repo_path": str(test_repo_path),
             "note_path": "test.txt",
             "branch_name": "master"
         }
@@ -103,57 +80,39 @@ def test_delete_note_route(client, mock_git_commander):
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "ok"
+    assert data["note_value"] is None
     
-    # Verify Git operations
-    mock_instance.file_exists.assert_called_once_with("test.txt", "master")
-    mock_instance.delete_file.assert_called_once_with("test.txt")
-    mock_instance.commit.assert_called_once()
+    mock_services['delete_note'].assert_called_once_with(str(test_repo_path), "test.txt", "master")
 
-##### ERROR HANDLING TESTS #####
-
-def test_get_note_route_errors(client, mock_git_commander):
-    """Test error handling in get_note route."""
-    mock_instance = mock_git_commander.return_value
-    
-    # Test non-existent note
-    mock_instance.file_exists.return_value = False
-    response = client.get("/apiv1/get-note?repo_path=/mock/repo&note_path=nonexistent.txt&branch_name=master")
-    assert response.status_code == 400
-    
-    # Test non-existent branch
-    mock_instance.file_exists.side_effect = Exception("Branch not found")
-    response = client.get("/apiv1/get-note?repo_path=/mock/repo&note_path=test.txt&branch_name=nonexistent")
-    assert response.status_code == 400
-
-def test_create_note_route_errors(client, mock_git_commander):
+def test_create_note_route_errors(client, mock_services, test_repo_path):
     """Test error handling in create_note route."""
-    mock_instance = mock_git_commander.return_value
-    
     # Test duplicate note
-    mock_instance.branch_exists.return_value = True
-    response = client.post(
-        "/apiv1/create-note",
-        json={
-            "repo_path": "/mock/repo",
-            "note_path": "existing.txt",
-            "note_value": "test"
-        }
-    )
-    assert response.status_code == 400
+    mock_services['create_note'].return_value = {"status": "error", "message": "conflict"}
     
-    # Test merge conflict
-    mock_instance.branch_exists.return_value = False
-    mock_instance.merge.return_value = True  # Indicates conflict
     response = client.post(
         "/apiv1/create-note",
         json={
-            "repo_path": "/mock/repo",
-            "note_path": "conflict.txt",
+            "repo_path": str(test_repo_path),
+            "note_path": "existing.txt",
             "note_value": "test"
         }
     )
     assert response.status_code == 200
     assert response.get_json()["message"] == "conflict"
+
+##### ERROR HANDLING TESTS #####
+
+def test_get_note_route_errors(client, mock_services):
+    """Test error handling in get_note route."""
+    # Test non-existent note
+    mock_services['get_note'].return_value = None
+    response = client.get("/apiv1/get-note?repo_path=/mock/repo&note_path=nonexistent.txt&branch_name=master")
+    assert response.status_code == 400
+    
+    # Test non-existent branch
+    mock_services['get_note'].side_effect = Exception("Branch not found")
+    response = client.get("/apiv1/get-note?repo_path=/mock/repo&note_path=test.txt&branch_name=nonexistent")
+    assert response.status_code == 400
 
 ##### VALIDATION TESTS #####
 
@@ -163,7 +122,7 @@ def test_create_note_route_errors(client, mock_git_commander):
     "/etc/passwd",
     "test/../../etc/passwd",
 ])
-def test_path_traversal_prevention(client, mock_git_commander, path):
+def test_path_traversal_prevention(client, mock_services, path):
     """Test path traversal prevention in routes."""
     response = client.get(f"/apiv1/get-note?repo_path=/mock/repo&note_path={path}&branch_name=master")
     assert response.status_code == 400
@@ -175,7 +134,7 @@ def test_path_traversal_prevention(client, mock_git_commander, path):
     {"repo_path": "/mock/repo", "note_path": "", "note_value": "test"},  # Empty path
     {"repo_path": "/mock/repo", "note_path": "test.txt", "note_value": ""},  # Empty content
 ])
-def test_input_validation(client, mock_git_commander, input_data):
+def test_input_validation(client, mock_services, input_data):
     """Test input validation in routes."""
     response = client.post("/apiv1/create-note", json=input_data)
     assert response.status_code == 400

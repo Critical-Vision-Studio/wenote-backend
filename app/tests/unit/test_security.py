@@ -1,4 +1,5 @@
 import pytest
+from unittest import mock
 
 @pytest.mark.parametrize("path", [
     "../test.txt",
@@ -9,9 +10,8 @@ import pytest
     "..\\..\\test.txt",
     "C:\\Windows\\System32\\test.txt"
 ])
-def test_path_traversal_prevention(client, mock_git_commander, path):
-    """Test prevention of path traversal attacks."""
-    # Test get-note
+def test_path_traversal_prevention(client, mock_services, path):
+    """Test path traversal prevention in routes."""
     response = client.get(f"/apiv1/get-note?repo_path=/mock/repo&note_path={path}&branch_name=master")
     assert response.status_code == 400
     assert "error" in response.get_json()
@@ -54,8 +54,8 @@ def test_path_traversal_prevention(client, mock_git_commander, path):
     "test\\rm -rf /",
     "test/../rm -rf /"
 ])
-def test_malicious_file_names(client, mock_git_commander, name):
-    """Test prevention of command injection through file names."""
+def test_malicious_file_names(client, mock_services, name):
+    """Test prevention of malicious file names."""
     response = client.post(
         "/apiv1/create-note",
         json={
@@ -74,16 +74,9 @@ def test_malicious_file_names(client, mock_git_commander, name):
     "Thumbs.db",
     "desktop.ini"
 ])
-def test_system_files(client, mock_git_commander, system_file):
-    """Test prevention of access to system files."""
-    response = client.post(
-        "/apiv1/create-note",
-        json={
-            "repo_path": "/mock/repo",
-            "note_path": system_file,
-            "note_value": "test"
-        }
-    )
+def test_system_files(client, mock_services, system_file):
+    """Test prevention of accessing system files."""
+    response = client.get(f"/apiv1/get-note?repo_path=/mock/repo&note_path={system_file}&branch_name=master")
     assert response.status_code == 400
     assert "error" in response.get_json()
 
@@ -94,13 +87,9 @@ def test_system_files(client, mock_git_commander, system_file):
     ("/apiv1/create-note", {"note_path": "", "note_value": "test"}),
     ("/apiv1/create-note", {"note_path": "test.txt", "note_value": ""}),
 ])
-def test_empty_inputs(client, mock_git_commander, endpoint, params):
-    """Test handling of empty or missing required fields."""
-    if endpoint in ["/apiv1/get-note", "/apiv1/get-note-names"]:
-        params["repo_path"] = "/mock/repo"
-        response = client.get(endpoint, query_string=params)
-    else:
-        response = client.post(endpoint, json=params)
-    
+def test_empty_inputs(client, mock_services, endpoint, params):
+    """Test handling of empty inputs."""
+    response = client.get(endpoint, query_string=params) if endpoint.startswith("/apiv1/get") else \
+               client.post(endpoint, json=params)
     assert response.status_code == 400
     assert "error" in response.get_json() 

@@ -1,6 +1,7 @@
 import os
+import tempfile
 import pytest
-from git_commander import GitCommander
+from app.utils import GitCommander
 
 def test_git_commander_initialization(temp_repo):
     """Test GitCommander initialization with a real repository."""
@@ -15,7 +16,7 @@ def test_create_and_show_file(temp_repo):
     # Create and commit a file
     commander.write_note("test.txt", test_content)
     commander.add_file("test.txt")
-    commander.commit("Add test.txt")
+    commander.commit(msg="Add test.txt")
     
     # Verify file exists and content matches
     assert commander.file_exists("test.txt", "master")
@@ -29,7 +30,7 @@ def test_branch_operations(temp_repo):
     # Create initial file in master
     commander.write_note("master.txt", "Master content")
     commander.add_file("master.txt")
-    commander.commit("Add master.txt")
+    commander.commit(msg="Add master.txt")
     
     # Create and switch to new branch
     new_branch = "feature-branch"
@@ -38,7 +39,7 @@ def test_branch_operations(temp_repo):
     # Add file in new branch
     commander.write_note("feature.txt", "Feature content")
     commander.add_file("feature.txt")
-    commander.commit("Add feature.txt")
+    commander.commit(msg="Add feature.txt")
     
     # Verify branch exists and files are correct
     assert commander.branch_exists(new_branch)
@@ -46,7 +47,7 @@ def test_branch_operations(temp_repo):
     assert commander.file_exists("master.txt", new_branch)
     
     # Test merging
-    has_conflict = commander.merge(new_branch, "master")
+    has_conflict = commander.merge(new_branch)
     assert not has_conflict
     assert commander.file_exists("feature.txt", "master")
 
@@ -57,22 +58,22 @@ def test_merge_conflict_handling(temp_repo):
     # Create file in master
     commander.write_note("conflict.txt", "Master content")
     commander.add_file("conflict.txt")
-    commander.commit("Add conflict.txt in master")
+    commander.commit(msg="Add conflict.txt in master")
     
     # Create branch and modify same file
     commander.create_branch("feature")
     commander.write_note("conflict.txt", "Feature content")
     commander.add_file("conflict.txt")
-    commander.commit("Modify conflict.txt in feature")
+    commander.commit(msg="Modify conflict.txt in feature")
     
     # Modify file in master to create conflict
-    commander.checkout("master")
+    commander.checkout_branch("master")
     commander.write_note("conflict.txt", "Updated master content")
     commander.add_file("conflict.txt")
-    commander.commit("Update conflict.txt in master")
+    commander.commit(msg="Update conflict.txt in master")
     
     # Attempt merge and verify conflict is detected
-    has_conflict = commander.merge("feature", "master")
+    has_conflict = commander.merge("feature")
     assert has_conflict
 
 def test_file_operations(temp_repo):
@@ -84,7 +85,7 @@ def test_file_operations(temp_repo):
     commander.write_note("note2.txt", "Content 2")
     commander.add_file("note1.txt")
     commander.add_file("note2.txt")
-    commander.commit("Add test notes")
+    commander.commit(msg="Add test notes")
     
     files = commander.list_files("master")
     assert "note1.txt" in files
@@ -92,7 +93,7 @@ def test_file_operations(temp_repo):
     
     # Test file deletion
     commander.delete_file("note1.txt")
-    commander.commit("Delete note1.txt")
+    commander.commit(msg="Delete note1.txt")
     
     files = commander.list_files("master")
     assert "note1.txt" not in files
@@ -109,11 +110,11 @@ def test_commit_history(temp_repo):
     # Create multiple commits
     commander.write_note("test.txt", "Initial content")
     commander.add_file("test.txt")
-    commander.commit("Initial commit")
+    commander.commit(msg="Initial commit")
     
     commander.write_note("test.txt", "Updated content")
     commander.add_file("test.txt")
-    commander.commit("Update content")
+    commander.commit(msg="Update content")
     
     # Test getting file from specific commit
     commits = commander.get_commits("test.txt")
