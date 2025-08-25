@@ -1,11 +1,15 @@
+Pipfile
+Pipfile.lock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+.idea/
+logs/
 # C extensions
 *.so
-
+pyrightconfig.json
 # Distribution / packaging
 .Python
 build/
